@@ -7,8 +7,8 @@
 
 WiFiServer server(SERVER_PORT);
 
-const char* ssid = "s2000";
-const char* password = "ich liebe dubai";
+const char* ssid = "xxxx";
+const char* password = "xxxx";
 
 // Variable to store the HTTP request
 String header;

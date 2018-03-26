@@ -1,15 +1,14 @@
-
 #ifndef _DEFINES_H
 #define _DEFINES_H
 
 /** Firmware version, hardware version, and maximal values */
-#define FWV    90    // Firmware version: 100 means 1.0.0
+#define FWV    95    // Firmware version: 100 means 1.0.0
 
 /** GPIO pins */
-#define BRIDGE1_PIN 5     // D1 // Switch L293D In1
-#define BRIDGE2_PIN 4     // D2 // Switch L293D In2
-#define BRIDGE3_PIN 2     // D4 // Switch L293D In3
-#define BRIDGE4_PIN 0     // D3 // Switch L293D In4
+#define BRIDGE1_PIN 12     // D6 // Switch L293D In1
+#define BRIDGE2_PIN 13     // D7 // Switch L293D In2
+#define BRIDGE3_PIN 2      // D4 // Switch L293D In3
+#define BRIDGE4_PIN 14     // D5 // Switch L293D In4
 
 #define MAX_NUMBER_ZONES 2
 

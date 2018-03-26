@@ -1,5 +1,7 @@
+#include <SeeedOLED.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <Wire.h>
 #include <FS.h>
 #include "defines.h"
 
@@ -14,12 +16,34 @@ String header;
 // Auxiliar variables to store the current output state
 String output1State = "off";
 String output2State = "off";
+char buffer[20];
+
+String get_ip(IPAddress _ip) {
+  String ip = "";
+  ip = _ip[0];
+  ip += ".";
+  ip += _ip[1];
+  ip += ".";
+  ip += _ip[2];
+  ip += ".";
+  ip += _ip[3];
+  return ip;
+}
+
 
 void wifi_init() {
+  SeeedOled.clearDisplay();
+  SeeedOled.setTextXY(2, 0);         //Set the cursor to Xth Page, Yth Column
+  SeeedOled.putString("Waiting for");
+  SeeedOled.setTextXY(4, 0);         //Set the cursor to Xth Page, Yth Column
+  SeeedOled.putString("WiFi connection");
 
-  for (int i = 10; i > 0; i--) { // wait 10sec with fan on at start up to indicate sucessful reset on powerup
+  for (int i = 5; i > -1; i--) { // wait 10sec with fan on at start up to indicate sucessful reset on powerup
     Serial.print(i);
     Serial.print(' ');
+    SeeedOled.setTextXY(0, 0);         //Set the cursor to Xth Page, Yth Column
+    SeeedOled.putNumber(i); //Print the Number
+    SeeedOled.putString(" ");
     delay(1000);
   }
   Serial.println("");
@@ -28,26 +52,29 @@ void wifi_init() {
   WiFi.begin(ssid, password);
   Serial.println("WiFi.begin called waiting for connected");
 
-  IPAddress ip(192, 168, 3, 24);
-  IPAddress gateway(ip[0], ip[1], ip[2], 1); // set gatway to ... 1
-  IPAddress subnet(255, 255, 255, 0);
-  IPAddress dns(8, 8, 8, 8);
+  //  IPAddress ip(192, 168, 3, 24);
+  //  IPAddress gateway(ip[0], ip[1], ip[2], 1); // set gatway to ... 1
+  //  IPAddress subnet(255, 255, 255, 0);
+  //  IPAddress dns(8, 8, 8, 8);
 
   Serial.print(F("Setting ip to DHCP: "));
   Serial.println("");
   Serial.print(F("HTTP Port: "));
   Serial.println(SERVER_PORT);
 
-//  if (!WiFi.config(ip, gateway, subnet, dns)) {
-//    Serial.println("WiFi.config() failed");
-//  }
-//  Serial.println("WiFi.config() succeeded");
+  //  if (!WiFi.config(ip, gateway, subnet, dns)) {
+  //    Serial.println("WiFi.config() failed");
+  //  }
+  //  Serial.println("WiFi.config() succeeded");
 
   // Wait for connection for 15 sec and then just continue
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
+    SeeedOled.setTextXY(6, 0);         //Set the cursor to Xth Page, Yth Column
+    SeeedOled.putString("finishing..."); //Print the String
   }
+
   Serial.println("");
   Serial.printf("Connect to %s\n", ssid);
   Serial.print("Module IP: ");
@@ -59,14 +86,63 @@ void wifi_init() {
   }
 
 }
+void oled_init() {
+  SeeedOled.init();  //initialze SEEED OLED display
+  SeeedOled.clearDisplay();          //clear the screen and set start position to top left corner
+  SeeedOled.setNormalDisplay();      //Set display to normal mode (i.e non-inverse mode)
+  SeeedOled.setPageMode();           //Set addressing mode to Page Mode
+}
+
+void disp_status(String output1State, String output2State) {
+
+  if (output1State == "off" and output2State == "off")   {
+    SeeedOled.clearDisplay();          //clear the screen and set start position to top left corner
+    SeeedOled.setNormalDisplay();  //Set display to normal mode
+    SeeedOled.setTextXY(0, 0);         //Set the cursor to Xth Page, Yth Column
+    SeeedOled.putString("IP: "); //Print the String
+    IPAddress ip = WiFi.localIP(); // Convert IP Here
+    String ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
+    ipStr.toCharArray(buffer, 20);
+    SeeedOled.putString((buffer));
+    SeeedOled.setTextXY(1, 0);         //Set the cursor to Xth Page, Yth Column
+    SeeedOled.putString("HTTP: "); //Print the String
+    SeeedOled.putNumber(SERVER_PORT); //Print the Number
+    SeeedOled.setTextXY(3, 0);         //Set the cursor to Xth Page, Yth Column
+    SeeedOled.putString("SSID: "); //Print the String
+    SeeedOled.putString(ssid); //Print the String
+    SeeedOled.setTextXY(4, 0);         //Set the cursor to Xth Page, Yth Column
+    SeeedOled.putString("RSSI: "); //Print the String
+    SeeedOled.putNumber(WiFi.RSSI());
+    SeeedOled.putString(" dBm "); //Print the String
+    SeeedOled.setTextXY(6, 0);         //Set the cursor to Xth Page, Yth Column
+    SeeedOled.putString("GARDENA V2.2"); //Print the String
+    SeeedOled.setTextXY(7, 0);         //Set the cursor to Xth Page, Yth Column
+    SeeedOled.putString("BOTH VALVE OFF"); //Print the String
+  } else if (output1State == "on" and output2State == "off") {
+    SeeedOled.setInverseDisplay();
+    SeeedOled.clearDisplay();
+    SeeedOled.setTextXY(2, 1);         //Set the cursor to Xth Page, Yth Column
+    SeeedOled.putString("TERRASSE OPEN"); //Print the String
+  } else if (output1State == "off" and output2State == "on") {
+    SeeedOled.setInverseDisplay();
+    SeeedOled.clearDisplay();
+    SeeedOled.setTextXY(5, 3);         //Set the cursor to Xth Page, Yth Column
+    SeeedOled.putString("RASEN OPEN"); //Print the String
+  } else if (output1State == "on" and output2State == "on") {
+    SeeedOled.setInverseDisplay();
+    SeeedOled.clearDisplay();
+    SeeedOled.setTextXY(2, 1);         //Set the cursor to Xth Page, Yth Column
+    SeeedOled.putString("TERRASSE OPEN"); //Print the String
+    SeeedOled.setTextXY(5, 3);         //Set the cursor to Xth Page, Yth Column
+    SeeedOled.putString("RASEN OPEN"); //Print the String
+  }
+}
 
 void do_setup() {
 
   DEBUG_BEGIN(115200);
   Serial.begin(115200);
   Serial.println("");
-
-  wifi_init();
 
   digitalWrite (BRIDGE1_PIN, LOW);
   digitalWrite (BRIDGE2_PIN, LOW);
@@ -84,8 +160,12 @@ void do_setup() {
   Serial.println("");
   server.begin();
   Serial.println("HTTP server started");
-}
 
+  Wire.begin();
+  oled_init();
+  wifi_init();
+  disp_status("off", "off");
+}
 
 void do_loop(void) {
   //  server.handleClient();
@@ -122,6 +202,10 @@ void do_loop(void) {
             } else if (header.indexOf("GET /1/close") >= 0) {
               Serial.println("VALVE 1 closed");
               output1State = "off";
+              SeeedOled.setNormalDisplay();      //Set display to normal mode (i.e non-inverse mode)
+              SeeedOled.clearDisplay();
+              SeeedOled.setTextXY(4, 1);         //Set the cursor to Xth Page, Yth Column
+              SeeedOled.putString("TERRASSE CLOSED"); //Print the String
               digitalWrite (BRIDGE1_PIN, LOW);
               digitalWrite (BRIDGE2_PIN, HIGH);
               delay (62);
@@ -141,6 +225,9 @@ void do_loop(void) {
               delay (62);
               digitalWrite (BRIDGE4_PIN, LOW);
             }
+
+            disp_status(output1State, output2State);
+
 
             // Display the HTML web page
             client.println("<!DOCTYPE html><html>");

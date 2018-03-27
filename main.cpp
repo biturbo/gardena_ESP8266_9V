@@ -7,8 +7,8 @@
 
 WiFiServer server(SERVER_PORT);
 
-const char* ssid = "xxxx";
-const char* password = "xxxx";
+const char* ssid = "s2000";
+const char* password = "ich liebe dubai";
 
 // Variable to store the HTTP request
 String header;
@@ -17,19 +17,6 @@ String header;
 String output1State = "off";
 String output2State = "off";
 char buffer[20];
-
-String get_ip(IPAddress _ip) {
-  String ip = "";
-  ip = _ip[0];
-  ip += ".";
-  ip += _ip[1];
-  ip += ".";
-  ip += _ip[2];
-  ip += ".";
-  ip += _ip[3];
-  return ip;
-}
-
 
 void wifi_init() {
   SeeedOled.clearDisplay();
@@ -86,6 +73,7 @@ void wifi_init() {
   }
 
 }
+
 void oled_init() {
   SeeedOled.init();  //initialze SEEED OLED display
   SeeedOled.clearDisplay();          //clear the screen and set start position to top left corner
@@ -104,37 +92,49 @@ void disp_status(String output1State, String output2State) {
     String ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
     ipStr.toCharArray(buffer, 20);
     SeeedOled.putString((buffer));
-    SeeedOled.setTextXY(1, 0);         //Set the cursor to Xth Page, Yth Column
-    SeeedOled.putString("HTTP: "); //Print the String
-    SeeedOled.putNumber(SERVER_PORT); //Print the Number
-    SeeedOled.setTextXY(3, 0);         //Set the cursor to Xth Page, Yth Column
-    SeeedOled.putString("SSID: "); //Print the String
-    SeeedOled.putString(ssid); //Print the String
-    SeeedOled.setTextXY(4, 0);         //Set the cursor to Xth Page, Yth Column
-    SeeedOled.putString("RSSI: "); //Print the String
+
+    String str;
+    byte fwv = FWV;
+    str = (fwv / 100);
+    str += ".";
+    str += ((fwv / 10) % 10);
+    str += ".";
+    str += (fwv % 10);
+    str.toCharArray(buffer, 10);
+    Serial.println(buffer);
+
+    SeeedOled.setTextXY(1, 0);
+    SeeedOled.putString("HTTP: ");
+    SeeedOled.putNumber(SERVER_PORT);
+    SeeedOled.setTextXY(3, 0);
+    SeeedOled.putString("SSID: ");
+    SeeedOled.putString(ssid);
+    SeeedOled.setTextXY(4, 0);
+    SeeedOled.putString("RSSI: ");
     SeeedOled.putNumber(WiFi.RSSI());
-    SeeedOled.putString(" dBm "); //Print the String
-    SeeedOled.setTextXY(6, 0);         //Set the cursor to Xth Page, Yth Column
-    SeeedOled.putString("GARDENA V2.2"); //Print the String
-    SeeedOled.setTextXY(7, 0);         //Set the cursor to Xth Page, Yth Column
-    SeeedOled.putString("BOTH VALVE OFF"); //Print the String
+    SeeedOled.putString(" dBm");
+    SeeedOled.setTextXY(5, 0);
+    SeeedOled.putString("GARDENA v");
+    SeeedOled.putString(buffer);
+    SeeedOled.setTextXY(7, 0);
+    SeeedOled.putString("BOTH VALVE OFF");
   } else if (output1State == "on" and output2State == "off") {
     SeeedOled.setInverseDisplay();
     SeeedOled.clearDisplay();
-    SeeedOled.setTextXY(2, 1);         //Set the cursor to Xth Page, Yth Column
-    SeeedOled.putString("TERRASSE OPEN"); //Print the String
+    SeeedOled.setTextXY(2, 1);
+    SeeedOled.putString("TERRASSE OPEN");
   } else if (output1State == "off" and output2State == "on") {
     SeeedOled.setInverseDisplay();
     SeeedOled.clearDisplay();
-    SeeedOled.setTextXY(5, 3);         //Set the cursor to Xth Page, Yth Column
-    SeeedOled.putString("RASEN OPEN"); //Print the String
+    SeeedOled.setTextXY(5, 3);
+    SeeedOled.putString("RASEN OPEN");
   } else if (output1State == "on" and output2State == "on") {
     SeeedOled.setInverseDisplay();
     SeeedOled.clearDisplay();
-    SeeedOled.setTextXY(2, 1);         //Set the cursor to Xth Page, Yth Column
-    SeeedOled.putString("TERRASSE OPEN"); //Print the String
-    SeeedOled.setTextXY(5, 3);         //Set the cursor to Xth Page, Yth Column
-    SeeedOled.putString("RASEN OPEN"); //Print the String
+    SeeedOled.setTextXY(2, 1);
+    SeeedOled.putString("TERRASSE OPEN");
+    SeeedOled.setTextXY(5, 3);
+    SeeedOled.putString("RASEN OPEN");
   }
 }
 
@@ -224,6 +224,16 @@ void do_loop(void) {
               digitalWrite (BRIDGE4_PIN, HIGH);
               delay (62);
               digitalWrite (BRIDGE4_PIN, LOW);
+            } else if (header.indexOf("GET /restart") >= 0) {
+              SeeedOled.setNormalDisplay();      //Set display to normal mode (i.e non-inverse mode)
+              SeeedOled.clearDisplay();
+              SeeedOled.setTextXY(4, 0);         //Set the cursor to Xth Page, Yth Column
+              SeeedOled.putString("Restarting..."); //Print the String
+              delay(1000);
+              currentLine = "";
+              header = ""; 
+              client.stop();             
+              ESP.restart();
             }
 
             disp_status(output1State, output2State);
@@ -238,7 +248,8 @@ void do_loop(void) {
             client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
             client.println(".button { background-color: #195B6A; border: none; color: white; padding: 16px 40px;");
             client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
-            client.println(".button2 {background-color: #77878A;}</style></head>");
+            client.println(".button2 {background-color: #77878A;}");
+            client.println(".button3 {background-color: #F44262;}</style></head>");
 
             // Web Page Heading
             client.println("<body><h1>Gardena Web Server</h1>");
@@ -260,7 +271,9 @@ void do_loop(void) {
             } else {
               client.println("<p><a href=\"/2/close\"><button class=\"button button2\">OFF</button></a></p>");
             }
-
+            client.println();
+            client.println("<p>Restart Gardena Controller</p>");
+            client.println("<p><a href=\"/restart\"><button class=\"button button3\">Restart</button></a></p>");
             client.println("</body></html>");
 
             // The HTTP response ends with another blank line
